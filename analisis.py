@@ -39,7 +39,15 @@ def match_score(a, b):
         aciertos = sum(1 for i in range(n)
                        if 0 <= i - des < m and a[i] == b[i - des])
         mejor = max(mejor, aciertos)
-    return mejor / max(n, m)
+    sim_desplazamiento = mejor / max(n, m)
+    fila = list(range(m + 1))           # Levenshtein (programacion dinamica)
+    for i, ca in enumerate(a, 1):
+        nueva = [i]
+        for j, cb in enumerate(b, 1):
+            nueva.append(min(fila[j] + 1, nueva[-1] + 1, fila[j - 1] + (ca != cb)))
+        fila = nueva
+    sim_edicion = 1 - fila[-1] / max(n, m)
+    return max(sim_desplazamiento, sim_edicion)
 
 def agrupar(lecturas, umbral):
     """Agrupa lecturas similares (greedy: primero las de mas veces).
