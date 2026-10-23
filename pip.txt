@@ -1,0 +1,3 @@
+pip install setuptools
+pip install rapidocr onnxruntime opencv-python
+pip install deep-sort-realtime

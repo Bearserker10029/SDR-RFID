@@ -12,7 +12,7 @@
 import time
 import redis
 
-from placas_utils import placa_valida, inferir_tipo
+from utils.placas_utils import placa_valida, inferir_tipo
 
 #  CONFIGURACION
 REDIS_HOST = "localhost"
