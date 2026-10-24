@@ -23,6 +23,7 @@ services:
     environment:
       REDIS_HOST: redis
       MOSTRAR_VIDEO: "0"
+      ZONA: "A"
     volumes:
       - ./models:/app/models # best_placas_v1.pt (no va en la imagen)
       - ./videos:/app/videos # FUENTE = "./videos/video1.mp4"
@@ -35,13 +36,16 @@ services:
     build: .
     container_name: analisis-sdr-rfid
     working_dir: /app/utils
-    command: python analisis.py
+    command: python analisis_sdr_rfid.py
     depends_on:
       redis:
         condition: service_healthy
     environment:
       REDIS_HOST: redis
-    restart: unless-stopped
+      ZONA_A: "A"
+      ZONA_B: "B"
+      TIEMPO_MIN_S: "10"
+    #restart: unless-stopped
 
 volumes:
   redis_data:

@@ -22,7 +22,13 @@ REDIS_DB = 0
 MIN_MATCHES = 3            # avistamientos minimos para confirmar una placa
 UMBRAL_MATCH = 0.8         # score minimo para agrupar placas similares
 INTERVALO_S = 10           # segundos entre rondas
-MODO_CONTINUO = False      # True = daemon; False = una sola pasada
+MODO_CONTINUO = True       # True = daemon; False = una sola pasada
+
+#  CONTROL DE VELOCIDAD POR TRAMO (2 zonas en el mismo camino)
+ZONA_A = os.getenv("ZONA_A", "A")            # zona de entrada (camara 1)
+ZONA_B = os.getenv("ZONA_B", "B")            # zona de salida  (camara 2)
+DISTANCIA_ZONAS_M = float(os.getenv("DISTANCIA_ZONAS_M", "100"))  # metros entre zonas
+TIEMPO_MIN_S = float(os.getenv("TIEMPO_MIN_S", "10"))  # transito VALIDO debe durar >= esto
 
 def match_score(a, b):
     """Coincidencia por digito tolerando desplazamientos (caracter faltante
@@ -139,6 +145,53 @@ def analizar_ronda(r):
           f"pendientes(<{MIN_MATCHES} match)={pendientes}")
     return confirmadas
 
+def detectar_infracciones_velocidad(r):
+    """Control de velocidad por tramo: compara la PRIMERA deteccion de cada
+    placa confirmada en la zona A y en la zona B (mismo camino).
+      - delta = ts_zona_B - ts_zona_A
+      - delta >= TIEMPO_MIN_S  -> valido
+      - delta <  TIEMPO_MIN_S  -> INFRACCION
+      - solo placas confirmadas: evita multar por lecturas OCR dudosas."""
+    placas = r.smembers("placas:confirmadas")
+    n_inf, n_ok, n_pend = 0, 0, 0
+
+    for placa in placas:
+        estado_prev = r.hget(f"placa:{placa}", "estado_vel")
+        if estado_prev == "infraccion":
+            n_inf += 1                    # ya informada, no repetir alerta
+            continue
+
+        ts_a = r.zscore(f"vel:{ZONA_A}", placa)
+        ts_b = r.zscore(f"vel:{ZONA_B}", placa)
+        if ts_a is None or ts_b is None:
+            n_pend += 1                   # aun no paso por ambas zonas
+            continue
+
+        delta = ts_b - ts_a
+        if delta <= 0:
+            n_pend += 1                   # orden de zonas inconsistente (relojes)
+            continue
+
+        velocidad = (DISTANCIA_ZONAS_M / delta) * 3.6   # m/s -> km/h
+        campos = {"vel_delta_s": round(delta, 2),
+                  "vel_kmh": round(velocidad, 1),
+                  "ts_vel": time.time()}
+
+        if delta < TIEMPO_MIN_S:
+            campos["estado_vel"] = "infraccion"
+            r.hset(f"placa:{placa}", mapping=campos)
+            r.sadd("placas:infraccion", placa)
+            print(f"  [INFRACCION] {placa}: {velocidad:.1f} km/h "
+                  f"(transito {delta:.1f}s < minimo {TIEMPO_MIN_S}s)")
+            n_inf += 1
+        else:
+            campos["estado_vel"] = "ok"
+            r.hset(f"placa:{placa}", mapping=campos)
+            n_ok += 1
+
+    print(f"[velocidad] infracciones={n_inf} ok={n_ok} "
+          f"pendientes(sin ambas zonas)={n_pend}")
+
 def main():
     r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB,
                     decode_responses=True)
@@ -150,6 +203,7 @@ def main():
         try:
             while True:
                 analizar_ronda(r)
+                detectar_infracciones_velocidad(r)
                 time.sleep(INTERVALO_S)
         except KeyboardInterrupt:
             print("[analisis] detenido")

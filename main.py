@@ -53,6 +53,8 @@ REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = 6379
 REDIS_DB = 0
 
+ZONA = os.getenv("ZONA", "A")
+
 DIMS_LIVIANO = (300, 150)
 DIMS_MENOR = (170, 200)
 RATIO_MENOR = 0.8
@@ -283,11 +285,14 @@ def guardar_sesion(rdb, sesion):
         "votos": n_votos,
     })
     rdb.sadd("placas:activas", texto)
+    rdb.zadd(f"vel:{ZONA}", {texto: ahora}, nx=True)
+
     rdb.lpush("sightings", json.dumps({
         "placa": texto,
         "conf_ocr": round(conf_prom, 3),
         "caja": [round(v, 1) for v in sesion.bbox],
         "ts": ahora,
+        "zona": ZONA,
         "track_id": sesion.track_id,
         "frames_vistos": len(sesion.detections_history),
     }))
