@@ -9,10 +9,39 @@ services:
       - redis_data:/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 5
+
+  detector:
+    build: .
+    container_name: detector-sdr-rfid
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOST: redis
+      MOSTRAR_VIDEO: "0"
+    volumes:
+      - ./models:/app/models # best_placas_v1.pt (no va en la imagen)
+      - ./videos:/app/videos # FUENTE = "./videos/video1.mp4"
+      - ./salidas:/app/salidas # evidencias trackXXXX_*.jpg
+    #devices:
+    #  - /dev/video1:/dev/video1
+    restart: unless-stopped
+
+  analisis:
+    build: .
+    container_name: analisis-sdr-rfid
+    working_dir: /app/utils
+    command: python analisis.py
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOST: redis
+    restart: unless-stopped
 
 volumes:
   redis_data:

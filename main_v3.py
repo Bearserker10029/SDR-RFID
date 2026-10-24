@@ -35,7 +35,7 @@ from utils.placas_utils import ALLOW_TODO, placa_valida
 
 #  CONFIGURACION
 MODELO = "./models/best_placas_v1.pt"
-FUENTE = 1                              # 0 = webcam; o ruta/URL rtsp
+FUENTE = "fine_tuning/image/17.jpg"    # 0 = webcam; o ruta/URL rtsp
 INTERVALO_S = 0.5                       # muestreo (techo; si OCR tarda, manda)
 N_WORKERS = 2                           # procesos paralelos (RAM: ~1-2 GB c/u)
 CARPETA_SALIDA = "salidas"

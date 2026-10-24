@@ -11,11 +11,11 @@
 
 import time
 import redis
-
-from utils.placas_utils import placa_valida, inferir_tipo
+import os
+from placas_utils import placa_valida, inferir_tipo
 
 #  CONFIGURACION
-REDIS_HOST = "localhost"
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = 6379
 REDIS_DB = 0
 

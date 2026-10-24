@@ -1,0 +1,23 @@
+# SDR-RFID - dependencias para la imagen Docker (Python 3.14, solo CPU)
+# torch/torchvision NO van aqui: el Dockerfile los instala desde el indice
+# CPU de PyTorch (wheel ~200 MB en vez de la CUDA de ~2.5 GB).
+# Versiones pineadas del requirements probado en Windows (reproducible).
+rapidocr==3.10.0
+onnxruntime==1.31.0
+ultralytics==8.4.177
+opencv-python-headless==5.0.0.93
+numpy==2.5.4
+redis==8.1.0
+PyYAML==6.0.3
+deep-sort-realtime==1.3.2
+setuptools<81
+pillow==12.3.0
+pyclipper==1.4.0
+shapely==2.2.0
+scipy==1.18.1
+scikit-image==0.26.0
+tqdm==4.70.1
+psutil==7.2.2
+requests==2.34.2
+urllib3==2.8.0
+certifi==2026.7.22
